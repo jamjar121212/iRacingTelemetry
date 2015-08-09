@@ -1,5 +1,3 @@
-var SERVER = "http://localhost:8080/"
-
 var iRacingTelemetry = function() {
 	this._requestRepeatRate = 100;
 	this._server = "http://localhost";
