@@ -1,6 +1,6 @@
 var iRacingTelemetry = function() {
 	this._server = "http://localhost";
-	this._port = 8080;
+	this._port = 6464;
 
 	this._currentTelemetryData = undefined;
 	this._currentSessionInfoData = undefined;
@@ -13,15 +13,15 @@ var iRacingTelemetry = function() {
 
 	this._running = false;
 
-	this._dataRetrievedCallbacks = {
-		iRacingTelemetry.TELEMETRY_QUERY: this._onTelemetryDataRetrieved.bind(this),
-		iRacingTelemetry.SESSION_INFO_QUERY: this._onSessionInfoDataRetrieved.bind(this)
-	};
+	this._dataRetrievedCallbacks = {};
+	this._dataRetrievedCallbacks[iRacingTelemetry.TELEMETRY_QUERY] = this._onTelemetryDataRetrieved.bind(this);
+	this._dataRetrievedCallbacks[iRacingTelemetry.SESSION_INFO_QUERY] = this._onSessionInfoDataRetrieved.bind(this);
 
-	this._requestRepeatRate = {
-		iRacingTelemetry.TELEMETRY_QUERY: 200,
-		iRacingTelemetry.SESSION_INFO_QUERY: 1000
-	};
+
+	this._requestRepeatRate = {};
+	this._requestRepeatRate[iRacingTelemetry.TELEMETRY_QUERY] = 2000;
+	this._requestRepeatRate[iRacingTelemetry.SESSION_INFO_QUERY] = 2000;
+
 };
 
 iRacingTelemetry.TELEMETRY_QUERY = "?type=telemetry";
@@ -29,12 +29,12 @@ iRacingTelemetry.SESSION_INFO_QUERY = "?type=sessioninfo";
 
 // set the rate at which we poll for telemetry data in milliseconds
 iRacingTelemetry.prototype.setTelemetryRequestRepeatRate = function(telemetryRequestRepeatRate) {
-	this._requestRepeatRate.TELEMETRY_QUERY = telemetryRequestRepeatRate;
+	this._requestRepeatRate[iRacingTelemetry.TELEMETRY_QUERY] = telemetryRequestRepeatRate;
 };
 
 // set the rate at which we poll for session info data in milliseconds
 iRacingTelemetry.prototype.setSessionInfoRequestRepeatRate = function(sessionInfoRequestRepeatRate) {
-	this._requestRepeatRate..SESSION_INFO_QUERY = sessionInfoRequestRepeatRate;
+	this._requestRepeatRate[iRacingTelemetry.SESSION_INFO_QUERY] = sessionInfoRequestRepeatRate;
 };
 
 // set the url of the telemetry server
@@ -84,10 +84,7 @@ iRacingTelemetry.prototype._requestData = function(query) {
 	xmlhttp.onreadystatechange = function() {
 		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
 			this._dataRetrievedCallbacks[query](xmlhttp.responseText);
-		} else {
-			console.log(query + " - Request failed, trying again...");
-			setTimeout(this._requestData.bind(this, queryType), this._requestRepeatRate[queryType]);
-		}
+		} 
 	}.bind(this);
 
 	xmlhttp.send();
@@ -100,7 +97,7 @@ iRacingTelemetry.prototype._onTelemetryDataRetrieved = function(data) {
 		this._onUpdateTelemetry(this._currentTelemetryData);
 	}
 	if (this._running) {
-		var queryType = iRacingTelemetry.SESSION_INFO_QUERY;
+		var queryType = iRacingTelemetry.TELEMETRY_QUERY;
 		this._telemetryRequestTimeout = setTimeout(this._requestData.bind(this, queryType), this._requestRepeatRate[queryType]);
 	}
 };
@@ -109,7 +106,7 @@ iRacingTelemetry.prototype._onSessionInfoDataRetrieved = function(data) {
 	var jsonData = JSON.parse(data);
 	this._currentSessionInfoData = jsonData;
 	if (this._onUpdateSessionInfo) {
-		this._onUpdateSessionInfo(this._currentTelemetryData);
+		this._onUpdateSessionInfo(this._currentSessionInfoData);
 	}
 	if (this._running) {
 		var queryType = iRacingTelemetry.SESSION_INFO_QUERY;
